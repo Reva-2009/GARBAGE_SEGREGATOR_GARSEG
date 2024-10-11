@@ -9,13 +9,8 @@ model = None
 def load_waste_model():
     global model
     if model is None:
-        try:
-            # Load the model only if it is not loaded
-            model = load_model("keras_model.h5", compile=False)
-            print("Model loaded successfully.")  # Debugging line
-        except Exception as e:
-            print(f"Error loading model: {e}")  # Print the error for debugging
-            st.error(f"Failed to load the model: {e}")  # Display error in Streamlit
+        # Load the model only if it is not loaded
+        model = load_model("keras_model.h5", compile=False)
 
 def waste_segregator(img):
     # Load the model if it's not loaded (handles inactivity issue)
@@ -37,12 +32,8 @@ def waste_segregator(img):
     return class_name, confidence_score
 
 # Load the labels
-try:
-    class_names = open("labels.txt", "r").readlines()
-    class_names = [name.strip() for name in class_names]  # Remove any whitespace
-except Exception as e:
-    print(f"Error loading labels: {e}")
-    st.error(f"Failed to load labels: {e}")
+class_names = open("labels.txt", "r").readlines()
+class_names = [name.strip() for name in class_names]  # Strip whitespace and newlines
 
 st.set_page_config(layout='wide')
 st.title('GARBAGE SEGREGATOR-GARSEG')
@@ -63,5 +54,5 @@ if input_img is not None:
         with col2:
             st.info('YOUR WASTE IS OF TYPE/RESULT')
             label, confidence_score = waste_segregator(image_file)
-            st.write(label)
-            st.write(confidence_score)
+            st.write(f"**Type of waste:** {label}")
+            st.write(f"**Confidence Score:** {confidence_score}%")
