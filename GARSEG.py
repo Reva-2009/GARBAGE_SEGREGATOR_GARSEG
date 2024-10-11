@@ -3,7 +3,19 @@ from PIL import Image, ImageOps
 import numpy as np
 import streamlit as st
 
+# Initialize the model as None
+model = None
+
+def load_waste_model():
+    global model
+    if model is None:
+        # Load the model only if it is not loaded
+        model = load_model("keras_model.h5", compile=False)
+
 def waste_segregator(img):
+    # Load the model if it's not loaded (handles inactivity issue)
+    load_waste_model()
+    
     # Preprocess the image
     size = (224, 224)
     image = ImageOps.fit(img, size, Image.Resampling.LANCZOS)
@@ -18,9 +30,6 @@ def waste_segregator(img):
     confidence_score = round(prediction[0][index] * 100, 2)  # Convert to percentage with 2 decimal places
 
     return class_name, confidence_score
-
-# Load the model
-model = load_model("keras_model.h5", compile=False)
 
 # Load the labels
 class_names = open("labels.txt", "r").readlines()
