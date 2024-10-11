@@ -1,11 +1,23 @@
-from keras.models import load_model  # TensorFlow is required for Keras to work
-from PIL import Image, ImageOps  # Install pillow instead of PIL
+from keras.models import load_model
+from PIL import Image, ImageOps
 import numpy as np
 import streamlit as st
-def segregate_wastes (img):
 
-# Disable scientific notation for clarity
- np.set_printoptions(suppress=True)
+def waste_segregator(img):
+    # Preprocess the image
+    size = (224, 224)
+    image = ImageOps.fit(img, size, Image.Resampling.LANCZOS)
+    image_array = np.asarray(image)
+    normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
+    data = np.expand_dims(normalized_image_array, axis=0)
+
+    # Predict the waste type
+    prediction = model.predict(data)
+    index = np.argmax(prediction)
+    class_name = class_names[index]
+    confidence_score = round(prediction[0][index] * 100, 2)  # Convert to percentage with 2 decimal places
+
+    return class_name, confidence_score
 
 # Load the model
 model = load_model("keras_model.h5", compile=False)
@@ -13,54 +25,24 @@ model = load_model("keras_model.h5", compile=False)
 # Load the labels
 class_names = open("labels.txt", "r").readlines()
 
-# Create the array of the right shape to feed into the keras model
-# The 'length' or number of images you can put into the array is
-# determined by the first position in the shape tuple, in this case 1
-data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+st.set_page_config(layout='wide')
+st.title('GARBAGE SEGREGATOR-GARSEG')
 
-# Replace this with the path to your image
-image = Image.open("test.jpg").convert("RGB")
-
-# resizing the image to be at least 224x224 and then cropping from the center
-size = (224, 224)
-image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-
-# turn the image into a numpy array
-image_array = np.asarray(image)
-
-# Normalize the image
-normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
-
-# Load the image into the array
-data[0] = normalized_image_array
-
-# Predicts the model
-prediction = model.predict(data)
-index = np.argmax(prediction)
-class_name = class_names[index]
-confidence_score = prediction[0][index]
-
-# Print prediction and confidence score
-print("Class:", class_name[2:], end="")
-print("Confidence Score:", confidence_score)
-
-st.set_page_config(layout="wide")
-
-st.title("GARBAGE SEGREGATOR- GARSEG")
-
-input_img=st.file_uploader("ENTER YOUR IMAGE HERE",type= ['jpeg','jpg','png'])
+input_img = st.file_uploader('ENTER YOUR IMAGE HERE!', type=['jpeg', 'jpg', 'png'])
 
 if input_img is not None:
-  if st.button("Classify"):''
+    if st.button('CLASSIFY'):
+        # Perform classification or any desired action
+        image_file = Image.open(input_img)
 
-else :
-  st.info('NO INPUT IMAGE RECIEVED! PLEASE UPLOAD A FILE FOR ANY RESULT.')
+        col1, col2 = st.columns([1, 1])
 
+        with col1:
+            st.info('YOUR UPLOADED IMAGE!')
+            st.image(image_file, use_column_width=True)
 
-col1,col2=st.columns([1,1])
-with col1:''
-st.info('YOUR UPLOADED IMAGE')
-st.image(input_img,use_column_width=True)
-
-with col2:''
-st.info('THE GARBAGE IS OF TYPE')
+        with col2:
+            st.info('YOUR WASTE IS OF TYPE/RESULT')
+            label, confidence_score = waste_segregator(image_file)
+            st.write(label)
+            st.write(confidence_score)
