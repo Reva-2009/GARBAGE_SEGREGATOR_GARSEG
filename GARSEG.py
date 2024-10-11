@@ -11,6 +11,7 @@ def load_waste_model():
     if model is None:
         # Load the model only if it is not loaded
         model = load_model("keras_model.h5", compile=False)
+        print("Model loaded successfully.")  # Debugging line
 
 def waste_segregator(img):
     # Load the model if it's not loaded (handles inactivity issue)
@@ -23,6 +24,7 @@ def waste_segregator(img):
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data = np.expand_dims(normalized_image_array, axis=0)
 
+    print("Image preprocessed successfully.")  # Debugging line
     try:
         # Predict the waste type
         prediction = model.predict(data)
@@ -65,3 +67,5 @@ if input_img is not None:
                 st.write(f"Confidence Score: {confidence_score}%")
             else:
                 st.error("Failed to classify the image.")
+
+# Run this code and check the terminal output for any issues or results.
