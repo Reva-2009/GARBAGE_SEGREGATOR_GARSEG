@@ -23,19 +23,26 @@ def waste_segregator(img):
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data = np.expand_dims(normalized_image_array, axis=0)
 
-    # Predict the waste type
-    prediction = model.predict(data)
-    index = np.argmax(prediction)
-    class_name = class_names[index]
-    confidence_score = round(prediction[0][index] * 100, 2)  # Convert to percentage with 2 decimal places
+    try:
+        # Predict the waste type
+        prediction = model.predict(data)
+        print(f"Prediction Raw Output: {prediction}")  # Debugging line
+        index = np.argmax(prediction)
+        class_name = class_names[index]
+        confidence_score = round(prediction[0][index] * 100, 2)  # Convert to percentage with 2 decimal places
+
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
+        return None, None  # Return None values in case of an error
 
     return class_name, confidence_score
 
 # Load the labels
-class_names = open("labels.txt", "r").readlines()
+with open("labels.txt", "r") as file:
+    class_names = file.read().splitlines()  # Load class names into a list
 
 st.set_page_config(layout='wide')
-st.title('GARBAGE SEGREGATOR-GARSEG')
+st.title('GARBAGE SEGREGATOR - GARSEG')
 
 input_img = st.file_uploader('ENTER YOUR IMAGE HERE!', type=['jpeg', 'jpg', 'png'])
 
@@ -53,5 +60,8 @@ if input_img is not None:
         with col2:
             st.info('YOUR WASTE IS OF TYPE/RESULT')
             label, confidence_score = waste_segregator(image_file)
-            st.write(label)
-            st.write(confidence_score)
+            if label and confidence_score:  # Check if the label and confidence_score are valid
+                st.write(label)
+                st.write(f"Confidence Score: {confidence_score}%")
+            else:
+                st.error("Failed to classify the image.")
