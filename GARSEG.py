@@ -3,28 +3,37 @@ from PIL import Image, ImageOps
 import numpy as np
 import streamlit as st
 
-# Initialize the model as None
-model = None
-
+# Load the model once
+@st.cache_resource
 def load_waste_model():
-    global model
-    if model is None:
-        # Load the model only if it is not loaded
+    try:
         model = load_model("keras_model.h5", compile=False)
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
+
+# Initialize model
+model = load_waste_model()
 
 def waste_segregator(img):
-    # Load the model if it's not loaded (handles inactivity issue)
-    load_waste_model()
-    
     # Preprocess the image
     size = (224, 224)
     image = ImageOps.fit(img, size, Image.Resampling.LANCZOS)
     image_array = np.asarray(image)
+    
+    # Debugging statement
+    st.write(f"Image shape: {image_array.shape}")
+
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data = np.expand_dims(normalized_image_array, axis=0)
 
     # Predict the waste type
     prediction = model.predict(data)
+    
+    # Debugging statement
+    st.write(f"Prediction: {prediction}")
+
     index = np.argmax(prediction)
     class_name = class_names[index]
     confidence_score = round(prediction[0][index] * 100, 2)  # Convert to percentage with 2 decimal places
@@ -32,11 +41,15 @@ def waste_segregator(img):
     return class_name, confidence_score
 
 # Load the labels
-class_names = open("labels.txt", "r").readlines()
-class_names = [name.strip() for name in class_names]  # Strip whitespace and newlines
+try:
+    with open("labels.txt", "r") as file:
+        class_names = [name.strip() for name in file.readlines()]  # Strip whitespace and newlines
+except FileNotFoundError:
+    st.error("Labels file not found. Please ensure 'labels.txt' is in the correct location.")
+    class_names = []  # Fallback in case of error
 
 st.set_page_config(layout='wide')
-st.title('GARBAGE SEGREGATOR-GARSEG')
+st.title('GARBAGE SEGREGATOR - GARSEG')
 
 input_img = st.file_uploader('ENTER YOUR IMAGE HERE!', type=['jpeg', 'jpg', 'png'])
 
@@ -53,6 +66,9 @@ if input_img is not None:
 
         with col2:
             st.info('YOUR WASTE IS OF TYPE/RESULT')
-            label, confidence_score = waste_segregator(image_file)
-            st.write(f"**Type of waste:** {label}")
-            st.write(f"**Confidence Score:** {confidence_score}%")
+            if model and class_names:  # Check if model and class names are loaded
+                label, confidence_score = waste_segregator(image_file)
+                st.write(f"**Type of waste:** {label}")
+                st.write(f"**Confidence Score:** {confidence_score}%")
+            else:
+                st.error("Model or labels are not available. Please check for errors.")
